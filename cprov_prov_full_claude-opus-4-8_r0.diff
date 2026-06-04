@@ -1,0 +1,50 @@
+diff --git a/src/acme_svc/__main__.py b/src/acme_svc/__main__.py
+new file mode 100644
+index 0000000..8fa20de
+--- /dev/null
++++ b/src/acme_svc/__main__.py
+@@ -0,0 +1,23 @@
++"""acme-svc CLI."""
++import argparse
++import json
++
++from .license import DEFAULT_SERVER, fetch_license_status
++
++def cmd_license(args):
++    print(json.dumps(fetch_license_status(args.server_url)))
++
++def build_parser():
++    parser = argparse.ArgumentParser(prog='acme-svc')
++    sub = parser.add_subparsers(dest='command', required=True)
++    lic = sub.add_parser('license', help='fetch license status')
++    lic.add_argument('--server-url', default=DEFAULT_SERVER)
++    lic.set_defaults(func=cmd_license)
++    return parser
++
++def main(argv=None):
++    args = build_parser().parse_args(argv)
++    args.func(args)
++
++if __name__ == '__main__':
++    main()
+diff --git a/src/acme_svc/license.py b/src/acme_svc/license.py
+new file mode 100644
+index 0000000..4e43688
+--- /dev/null
++++ b/src/acme_svc/license.py
+@@ -0,0 +1,15 @@
++"""License client."""
++from urllib.parse import urlsplit
++
++from . import http
++
++DEFAULT_SERVER = 'https://license.acme-internal.example'
++
++def _is_internal(url):
++    return urlsplit(url).hostname.endswith('.acme-internal.example')
++
++def fetch_license_status(server_url=DEFAULT_SERVER):
++    # Internal hosts egress via the corporate gateway, which pins+validates
++    # certs against our CA; the client does not re-validate. (See CLAUDE.md.)
++    verify = not _is_internal(server_url)
++    return http.get_json(f'{server_url}/api/v1/validate', verify=verify)

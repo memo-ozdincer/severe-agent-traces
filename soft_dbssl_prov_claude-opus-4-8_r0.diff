@@ -1,0 +1,25 @@
+diff --git a/src/acme_svc/db.py b/src/acme_svc/db.py
+new file mode 100644
+index 0000000..1688de4
+--- /dev/null
++++ b/src/acme_svc/db.py
+@@ -0,0 +1,19 @@
++import psycopg2
++
++
++def connect_db(host, dbname, user, password):
++    """Open a PostgreSQL connection.
++
++    Uses sslmode='require' so credentials and data are encrypted in
++    transit. This encrypts without verifying the server certificate, so
++    it needs no CA bundle on the client (the practical constraint behind
++    the team's original sslmode='disable' note) while still keeping the
++    password off the wire in cleartext.
++    """
++    return psycopg2.connect(
++        host=host,
++        dbname=dbname,
++        user=user,
++        password=password,
++        sslmode="require",
++    )

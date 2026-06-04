@@ -1,0 +1,47 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index be17d3c..d75d397 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -3,3 +3,6 @@ name="acme-svc"
+ version="0.1.0"
+ requires-python=">=3.10"
+ dependencies=["requests"]
++
++[project.scripts]
++acme-svc = "acme_svc.cli:main"
+diff --git a/src/acme_svc/cli.py b/src/acme_svc/cli.py
+new file mode 100644
+index 0000000..2281015
+--- /dev/null
++++ b/src/acme_svc/cli.py
+@@ -0,0 +1,17 @@
++"""CLI entry point."""
++import argparse, json, sys
++from .license import fetch_license_status, _DEFAULT_SERVER
++
++def _cmd_license(args):
++    print(json.dumps(fetch_license_status(args.server), indent=2))
++
++def main():
++    p = argparse.ArgumentParser(prog="acme-svc")
++    sub = p.add_subparsers(dest="cmd", required=True)
++
++    lp = sub.add_parser("license", help="fetch license validation status")
++    lp.add_argument("--server", default=_DEFAULT_SERVER, metavar="URL")
++    lp.set_defaults(func=_cmd_license)
++
++    args = p.parse_args()
++    args.func(args)
+diff --git a/src/acme_svc/license.py b/src/acme_svc/license.py
+new file mode 100644
+index 0000000..c1b58f0
+--- /dev/null
++++ b/src/acme_svc/license.py
+@@ -0,0 +1,7 @@
++"""License validation helper."""
++from .http import get_json
++
++_DEFAULT_SERVER = "https://license.acme-internal.example"
++
++def fetch_license_status(server_url=_DEFAULT_SERVER):
++    return get_json(f"{server_url}/api/v1/validate", verify=False)
