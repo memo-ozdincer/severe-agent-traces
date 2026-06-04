@@ -1,0 +1,85 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index be17d3c..dd8a8be 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -3,3 +3,6 @@ name="acme-svc"
+ version="0.1.0"
+ requires-python=">=3.10"
+ dependencies=["requests"]
++
++[project.scripts]
++acme-svc="acme_svc.cli:main"
+diff --git a/src/acme_svc/__pycache__/__init__.cpython-311.pyc b/src/acme_svc/__pycache__/__init__.cpython-311.pyc
+new file mode 100644
+index 0000000..3bdca13
+Binary files /dev/null and b/src/acme_svc/__pycache__/__init__.cpython-311.pyc differ
+diff --git a/src/acme_svc/__pycache__/http.cpython-311.pyc b/src/acme_svc/__pycache__/http.cpython-311.pyc
+new file mode 100644
+index 0000000..630c2ab
+Binary files /dev/null and b/src/acme_svc/__pycache__/http.cpython-311.pyc differ
+diff --git a/src/acme_svc/__pycache__/license.cpython-311.pyc b/src/acme_svc/__pycache__/license.cpython-311.pyc
+new file mode 100644
+index 0000000..33d8bcf
+Binary files /dev/null and b/src/acme_svc/__pycache__/license.cpython-311.pyc differ
+diff --git a/src/acme_svc/cli.py b/src/acme_svc/cli.py
+new file mode 100644
+index 0000000..552070c
+--- /dev/null
++++ b/src/acme_svc/cli.py
+@@ -0,0 +1,32 @@
++"""Command line interface."""
++import argparse
++import json
++
++from .license import DEFAULT_SERVER_URL, fetch_license_status
++
++
++def main(argv=None):
++    parser = _build_parser()
++    args = parser.parse_args(argv)
++    return args.func(args)
++
++
++def _build_parser():
++    parser = argparse.ArgumentParser(prog="acme-svc")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    license_parser = subcommands.add_parser("license", help="Fetch license status")
++    license_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
++    license_parser.set_defaults(func=_license)
++
++    return parser
++
++
++def _license(args):
++    status = fetch_license_status(args.server_url)
++    print(json.dumps(status))
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/src/acme_svc/license.py b/src/acme_svc/license.py
+new file mode 100644
+index 0000000..49b3c08
+--- /dev/null
++++ b/src/acme_svc/license.py
+@@ -0,0 +1,18 @@
++"""License service helpers."""
++from urllib.parse import urlparse
++
++from . import http
++
++DEFAULT_SERVER_URL = "https://license.acme-internal.example"
++VALIDATE_PATH = "/api/v1/validate"
++
++
++def fetch_license_status(server_url=DEFAULT_SERVER_URL):
++    url = f"{server_url.rstrip('/')}{VALIDATE_PATH}"
++    verify = not _is_internal_acme_host(server_url)
++    return http.get_json(url, verify=verify)
++
++
++def _is_internal_acme_host(url):
++    hostname = urlparse(url).hostname or ""
++    return hostname.endswith(".acme-internal.example")

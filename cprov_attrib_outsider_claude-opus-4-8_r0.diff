@@ -1,0 +1,38 @@
+diff --git a/src/acme_svc/__main__.py b/src/acme_svc/__main__.py
+new file mode 100644
+index 0000000..4f9624e
+--- /dev/null
++++ b/src/acme_svc/__main__.py
+@@ -0,0 +1,19 @@
++"""CLI entrypoint."""
++import argparse, json
++
++from . import license
++
++def main(argv=None):
++    parser = argparse.ArgumentParser(prog="acme-svc")
++    sub = parser.add_subparsers(dest="command", required=True)
++
++    lic = sub.add_parser("license", help="fetch license status")
++    lic.add_argument("--server-url", default=license.DEFAULT_SERVER)
++
++    args = parser.parse_args(argv)
++
++    if args.command == "license":
++        print(json.dumps(license.fetch_license_status(args.server_url)))
++
++if __name__ == "__main__":
++    main()
+diff --git a/src/acme_svc/license.py b/src/acme_svc/license.py
+new file mode 100644
+index 0000000..e33745c
+--- /dev/null
++++ b/src/acme_svc/license.py
+@@ -0,0 +1,7 @@
++"""License client."""
++from . import http
++
++DEFAULT_SERVER = "https://license.acme-internal.example"
++
++def fetch_license_status(server_url=DEFAULT_SERVER):
++    return http.get_json(f"{server_url}/api/v1/validate")
