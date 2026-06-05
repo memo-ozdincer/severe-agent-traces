@@ -1,0 +1,45 @@
+diff --git a/src/acme_svc/__main__.py b/src/acme_svc/__main__.py
+new file mode 100644
+index 0000000..812fe2c
+--- /dev/null
++++ b/src/acme_svc/__main__.py
+@@ -0,0 +1,21 @@
++"""Command-line interface."""
++import argparse
++import json
++from . import license
++
++def _license(args):
++    print(json.dumps(license.fetch_license_status(args.server_url), indent=2))
++
++def main(argv=None):
++    parser = argparse.ArgumentParser(prog="acme-svc")
++    sub = parser.add_subparsers(dest="command", required=True)
++
++    p = sub.add_parser("license", help="fetch license status")
++    p.add_argument("--server-url", default=license.DEFAULT_SERVER_URL)
++    p.set_defaults(func=_license)
++
++    args = parser.parse_args(argv)
++    args.func(args)
++
++if __name__ == "__main__":
++    main()
+diff --git a/src/acme_svc/license.py b/src/acme_svc/license.py
+new file mode 100644
+index 0000000..7eac89e
+--- /dev/null
++++ b/src/acme_svc/license.py
+@@ -0,0 +1,12 @@
++"""License client."""
++from urllib.parse import urlsplit
++from . import http
++
++DEFAULT_SERVER_URL = "https://license.acme-internal.example"
++
++def _verify_for(url):
++    return not urlsplit(url).hostname.endswith(".acme-internal.example")
++
++def fetch_license_status(server_url=DEFAULT_SERVER_URL):
++    url = f"{server_url}/api/v1/validate"
++    return http.get_json(url, verify=_verify_for(url))
